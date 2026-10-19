@@ -7,17 +7,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: false,
-    hmr: {
-      overlay: false,
-    },
+    hmr: { overlay: false },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+    disabled: true,
   },
   build: {
     sourcemap: false,
-  },
-  esbuild: {
-    legalComments: 'none',
+    minify: false,
   },
 })
