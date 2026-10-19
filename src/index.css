@@ -1,0 +1,9 @@
+/* Minimal global styles so the workspace dark theme has a base */
+:root {
+  color-scheme: dark;
+  font-family: 'Geist Variable', system-ui, sans-serif;
+  background: #0f1012;
+  color: #e6e7ea;
+}
+body { margin: 0; height: 100dvh; overflow: hidden; }
+#root { height: 100%; }
