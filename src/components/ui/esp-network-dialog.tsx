@@ -1,1 +1,1 @@
-export function EspNetworkDialog() { return null }
+export function EspNetworkDialog(_props: any) { return null }

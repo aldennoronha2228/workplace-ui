@@ -1,1 +1,3 @@
-export function InstructionsGuide() { return <div>Instructions</div> }
+export function InstructionsGuide() {
+  return <div style={{ padding: 12 }}>Instructions</div>
+}

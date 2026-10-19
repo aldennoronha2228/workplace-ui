@@ -1,1 +1,4 @@
-export const buildGuideApi = { get: async () => ({}) }
+export const buildGuideApi = {
+  get: async () => ({}),
+  list: async () => [],
+}

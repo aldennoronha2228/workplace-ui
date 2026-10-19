@@ -1,1 +1,1 @@
-export function BoardFlashDialog() { return null }
+export function BoardFlashDialog(_props: any) { return null }

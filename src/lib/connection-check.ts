@@ -1,1 +1,3 @@
-export const connectionCheckApi = { check: async () => ({}) }
+export const connectionCheckApi = {
+  check: async () => ({}),
+}

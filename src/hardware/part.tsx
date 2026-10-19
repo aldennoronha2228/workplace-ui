@@ -1,1 +1,1 @@
-export function HardwarePart() { return null }
+export function HardwarePart(_props: any) { return null }

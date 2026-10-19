@@ -1,1 +1,1 @@
-export const visibleForBuilding = () => true
+export const visibleForBuilding = (..._args: any[]) => true
