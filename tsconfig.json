@@ -6,6 +6,12 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@velxio/*": ["vendor/velxio/frontend/src/*"]
+    },
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
@@ -16,5 +22,12 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/hardware/spice.ts",
+    "src/lib/chat.ts",
+    "src/lib/question-options.ts",
+    "src/lib/use-typed-message.ts",
+    "src/lib/workspace-module.ts"
+  ]
 }

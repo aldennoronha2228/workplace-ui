@@ -1,0 +1,1381 @@
+{
+  "_comment": [
+    "The chip ABI as velxio-chip.h states it, one table for every host (board-buses F7).",
+    "Three suites replay these scenarios against the same abi-probe.wasm, each driving the",
+    "chip the way that host does in production: board-buses-abi-parity.test.ts (the browser,",
+    "through the bus fabric and a PinManager), the OSS test_wasm_chip_abi_parity.py (the QEMU",
+    "workers: spi_transfer_byte behind spi_cs_active, the I2C bus table and WasmChipI2CSlave,",
+    "feed_uart_byte, notify_pin_change, fire_due_timers on a clock) and the pro",
+    "test_board_buses_abi_parity_pi.py (the Linux boards, whole I2C transactions and the CE",
+    "replay of PiSpiResponder). A step answers the same everywhere unless it carries `hosts`,",
+    "which names the host that answers differently and says why: a host difference is stated,",
+    "never skipped.",
+    "",
+    "Ops. call: a probe export, with `ret` when it returns something. drive: the MCU drives",
+    "the pad a chip input is wired to (a digitalWrite: the pad reported as driving, and the",
+    "level). pad: the MCU configures that pad as an input with a pull (a pinMode) and drives",
+    "nothing. spi: the board's SPI controller clocks `mosi` and reads `miso`. i2c: the board's",
+    "I2C controller runs `seq` (start addr read -> ack, write byte -> ack, read -> byte, stop).",
+    "uart_rx: the board's UART transmits to the chip. board_pin: the level the board reads on",
+    "the pin wired to a chip pin. clock: the guest clock reaches `ns` and every timer due by",
+    "then fires. attr: the host applies a live attribute value. poke: bytes into the chip's",
+    "scratch. trace: the callbacks the chip recorded since the last trace step, in order,",
+    "then cleared.",
+    "",
+    "A scenario with `only` names the hosts that can drive it at all, and says why the others",
+    "cannot: the Linux boards address a chip enable per transaction (a select is never floating",
+    "volts: the tab's circuit solve publishes `volts` on the net of the pad wired to chip pin `pin` (null: no wire reaches the pad any more). The browser runtime reads it off the electrical store; a worker or Linux host is told it as pad_volts, keyed by the chip's pin names.",
+    "and never a GPIO the guest writes) and forward no pins, UART or timers to a chip."
+  ],
+  "pins": {
+    "CS": 10,
+    "CS2": 9,
+    "SCK": 13,
+    "MOSI": 11,
+    "MISO": 12,
+    "SDA": 18,
+    "SCL": 19,
+    "RX": 1,
+    "TX": 0,
+    "IN": 2,
+    "OUT": 3,
+    "DIR": 4
+  },
+  "blobName": "card",
+  "blobHex": "000102030405060708090a0b0c0d0e0f",
+  "scenarios": [
+    {
+      "name": "spi: the bus honours CS, and a completed transfer reports on_done once, with this handle's buffer",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "spi_handle",
+          "args": [
+            0
+          ],
+          "ret": 0,
+          "why": "the first vx_spi_attach is handle 0"
+        },
+        {
+          "op": "call",
+          "fn": "spi_handle",
+          "args": [
+            1
+          ],
+          "ret": 1,
+          "why": "the second is handle 1: two devices, not one overwritten"
+        },
+        {
+          "op": "call",
+          "fn": "spi_arm",
+          "args": [
+            0,
+            3,
+            160
+          ]
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            17
+          ],
+          "miso": [
+            255
+          ],
+          "why": "CS never driven: the line floats and a select with a pull-up reads deselected"
+        },
+        {
+          "op": "trace",
+          "expect": []
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            34
+          ],
+          "miso": [
+            255
+          ],
+          "why": "deselected: the chip neither answers nor consumes"
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=1"
+          ]
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            17,
+            34,
+            51
+          ],
+          "miso": [
+            160,
+            161,
+            162
+          ],
+          "why": "the armed bytes go out, the master's come in"
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=0",
+            "spi_done h=0 n=3 buf=own",
+            "spi_rx 0=11",
+            "spi_rx 1=22",
+            "spi_rx 2=33"
+          ]
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            68
+          ],
+          "miso": [
+            255
+          ],
+          "why": "selected but nothing armed: the line idles"
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "call",
+          "fn": "spi_stop",
+          "args": [
+            0
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=1"
+          ],
+          "why": "a completed transfer is over: vx_spi_stop after it reports nothing (the worker used to fire on_done a second time)"
+        },
+        {
+          "op": "call",
+          "fn": "spi_arm",
+          "args": [
+            0,
+            4,
+            176
+          ]
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            1,
+            2
+          ],
+          "miso": [
+            176,
+            177
+          ]
+        },
+        {
+          "op": "call",
+          "fn": "spi_stop",
+          "args": [
+            0
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=0",
+            "spi_done h=0 n=2 buf=own",
+            "spi_rx 0=01",
+            "spi_rx 1=02"
+          ],
+          "why": "a transfer stopped part-way reports the bytes exchanged so far"
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            3
+          ],
+          "miso": [
+            255
+          ],
+          "why": "and is over: the rest of the buffer is not served"
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "call",
+          "fn": "spi_arm",
+          "args": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            9
+          ],
+          "miso": [
+            255
+          ],
+          "why": "an empty vx_spi_start arms nothing"
+        },
+        {
+          "op": "call",
+          "fn": "spi_stop",
+          "args": [
+            0
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=1",
+            "pin CS=0"
+          ],
+          "why": "and stopping nothing reports nothing"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Pi guest addresses a chip enable per SPI transaction: a select is never floating, never driven as a GPIO, and one responder is one CE, so this scenario has no Pi form; the Pi's own SPI rows are the CE scenario"
+    },
+    {
+      "name": "spi: the documented CS idiom (arm on the falling edge, stop on the rising one) reports one completion",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "set_auto_arm",
+          "args": [
+            1
+          ]
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            1,
+            2,
+            3
+          ],
+          "miso": [
+            160,
+            161,
+            162
+          ]
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            4
+          ],
+          "miso": [
+            255
+          ],
+          "why": "the chip did not re-arm from on_done"
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=1",
+            "pin CS=0",
+            "spi_done h=0 n=3 buf=own",
+            "spi_rx 0=01",
+            "spi_rx 1=02",
+            "spi_rx 2=03",
+            "pin CS=1"
+          ],
+          "why": "the stop the chip issues on CS rising finds the transfer already complete"
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            5
+          ],
+          "miso": [
+            160
+          ]
+        },
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=0",
+            "pin CS=1",
+            "spi_done h=0 n=1 buf=own",
+            "spi_rx 0=05"
+          ],
+          "why": "CS rising ends the frame: on_done with the one byte clocked, from the chip's own vx_spi_stop"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Pi guest addresses a chip enable per SPI transaction: a select is never floating, never driven as a GPIO, and one responder is one CE, so this scenario has no Pi form; the Pi's own SPI rows are the CE scenario"
+    },
+    {
+      "name": "spi: a second handle answers each byte as it comes (on_exchange) behind its own select",
+      "steps": [
+        {
+          "op": "drive",
+          "pin": "CS",
+          "level": 1
+        },
+        {
+          "op": "drive",
+          "pin": "CS2",
+          "level": 1
+        },
+        {
+          "op": "call",
+          "fn": "spi_arm",
+          "args": [
+            1,
+            2,
+            192
+          ]
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            15
+          ],
+          "miso": [
+            255
+          ],
+          "why": "CS2 high: not this handle's byte"
+        },
+        {
+          "op": "drive",
+          "pin": "CS2",
+          "level": 0
+        },
+        {
+          "op": "spi",
+          "mosi": [
+            15,
+            240
+          ],
+          "miso": [
+            240,
+            15
+          ],
+          "why": "the answer is for THIS byte, from on_exchange"
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=1",
+            "pin CS2=1",
+            "pin CS2=0",
+            "spi_xchg 0f->f0",
+            "spi_xchg f0->0f"
+          ],
+          "why": "the armed buffer is the look-ahead only: it is not consumed and reports no completion"
+        },
+        {
+          "op": "drive",
+          "pin": "CS2",
+          "level": 1
+        },
+        {
+          "op": "call",
+          "fn": "spi_stop",
+          "args": [
+            1
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS2=1",
+            "spi_done h=1 n=0 buf=own"
+          ],
+          "why": "stopping the still-armed look-ahead reports zero bytes with handle 1's own buffer"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Pi guest addresses a chip enable per SPI transaction: a select is never floating, never driven as a GPIO, and one responder is one CE, so this scenario has no Pi form; the Pi's own SPI rows are the CE scenario"
+    },
+    {
+      "name": "i2c: every START is announced (a repeated START included), the STOP once, and two addresses are two targets",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "i2c_handle",
+          "args": [
+            0
+          ],
+          "ret": 0
+        },
+        {
+          "op": "call",
+          "fn": "i2c_handle",
+          "args": [
+            1
+          ],
+          "ret": 0,
+          "why": "vx_i2c_attach answers 0 in every host"
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              66,
+              0,
+              true
+            ],
+            [
+              "write",
+              16,
+              true
+            ],
+            [
+              "stop"
+            ]
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "i2c_connect slot=0 addr=42 read=0",
+            "i2c_write slot=0 10",
+            "i2c_stop slot=0"
+          ]
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              66,
+              0,
+              true
+            ],
+            [
+              "write",
+              5,
+              true
+            ],
+            [
+              "start",
+              66,
+              1,
+              true
+            ],
+            [
+              "read",
+              53
+            ],
+            [
+              "read",
+              54
+            ],
+            [
+              "stop"
+            ]
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "i2c_connect slot=0 addr=42 read=0",
+            "i2c_write slot=0 05",
+            "i2c_connect slot=0 addr=42 read=1",
+            "i2c_read slot=0 ->35",
+            "i2c_read slot=0 ->36",
+            "i2c_stop slot=0"
+          ],
+          "why": "write-then-read with a repeated START: on_connect for the read phase, and no on_stop in between",
+          "hosts": {
+            "pi": {
+              "expect": [
+                "i2c_connect slot=0 addr=42 read=0",
+                "i2c_write slot=0 05",
+                "i2c_stop slot=0",
+                "i2c_connect slot=0 addr=42 read=1",
+                "i2c_read slot=0 ->35",
+                "i2c_read slot=0 ->36",
+                "i2c_stop slot=0"
+              ],
+              "why": "the Linux guest's read_register is two whole transactions on the relay (a write with STOP, then a read): the chip sees an on_stop where a repeated START would carry none"
+            }
+          }
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              67,
+              0,
+              true
+            ],
+            [
+              "write",
+              2,
+              true
+            ],
+            [
+              "stop"
+            ],
+            [
+              "start",
+              67,
+              1,
+              true
+            ],
+            [
+              "read",
+              66
+            ],
+            [
+              "stop"
+            ]
+          ],
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "the Pi relay registers one address per chip (pi_attach_slave carries one `address`, the first vx_i2c_attach): a second address is not reachable on that host"
+            }
+          }
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "i2c_connect slot=1 addr=43 read=0",
+            "i2c_write slot=1 02",
+            "i2c_stop slot=1",
+            "i2c_connect slot=1 addr=43 read=1",
+            "i2c_read slot=1 ->42",
+            "i2c_stop slot=1"
+          ],
+          "why": "the second address is served by its own callbacks and keeps its own pointer",
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "the Pi relay registers one address per chip (pi_attach_slave carries one `address`, the first vx_i2c_attach): a second address is not reachable on that host"
+            }
+          }
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              66,
+              0,
+              true
+            ],
+            [
+              "write",
+              238,
+              false
+            ],
+            [
+              "stop"
+            ]
+          ],
+          "hosts": {
+            "pi": {
+              "acks": false,
+              "why": "the relay's write phase carries no ACK back (I2C W on the guest shim reports nothing per byte); the trace shows the byte reached the chip"
+            }
+          }
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "i2c_connect slot=0 addr=42 read=0",
+            "i2c_write slot=0 ee",
+            "i2c_stop slot=0"
+          ],
+          "why": "a byte the chip refuses is a NAK on the wire"
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              68,
+              0,
+              false
+            ],
+            [
+              "stop"
+            ]
+          ],
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "the Pi relay only reaches the slave registered at an address: a transaction to another address never arrives here"
+            }
+          }
+        },
+        {
+          "op": "trace",
+          "expect": [],
+          "why": "an address the chip did not attach is nobody's",
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "the Pi relay only reaches the slave registered at an address: a transaction to another address never arrives here"
+            }
+          }
+        },
+        {
+          "op": "i2c",
+          "seq": [
+            [
+              "start",
+              66,
+              0,
+              true
+            ],
+            [
+              "write",
+              7,
+              true
+            ],
+            [
+              "start",
+              67,
+              1,
+              true
+            ],
+            [
+              "read",
+              67
+            ],
+            [
+              "stop"
+            ]
+          ],
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "one address per chip on the Pi relay, and no repeated START on the guest shim"
+            }
+          }
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "i2c_connect slot=0 addr=42 read=0",
+            "i2c_write slot=0 07",
+            "i2c_connect slot=1 addr=43 read=1",
+            "i2c_read slot=1 ->43",
+            "i2c_stop slot=0",
+            "i2c_stop slot=1"
+          ],
+          "why": "a repeated START to the other address: both targets were addressed, both see the STOP",
+          "hosts": {
+            "pi": {
+              "skip": true,
+              "why": "one address per chip on the Pi relay, and no repeated START on the guest shim"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "uart: what the board transmits reaches on_rx_byte, what the chip writes reaches the board and reports done",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "uart_handle",
+          "args": [],
+          "ret": 0
+        },
+        {
+          "op": "uart_rx",
+          "bytes": [
+            65,
+            66
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "uart_rx 41",
+            "uart_rx 42"
+          ]
+        },
+        {
+          "op": "call",
+          "fn": "uart_send",
+          "args": [
+            3
+          ],
+          "ret": 1,
+          "board_rx": [
+            65,
+            66,
+            67
+          ]
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "uart_tx_done"
+          ],
+          "why": "one on_tx_done per vx_uart_write, after every byte is on the wire"
+        },
+        {
+          "op": "call",
+          "fn": "uart_send",
+          "args": [
+            0
+          ],
+          "ret": 1,
+          "board_rx": []
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "uart_tx_done"
+          ],
+          "why": "an empty write puts nothing on the wire and still completes"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Linux-board host forwards I2C transactions and SPI chip enables to a chip and nothing else: no pad, no UART, no timer scheduler reaches it"
+    },
+    {
+      "name": "pins: a write reaches the board, a level the board drives is read and watched",
+      "steps": [
+        {
+          "op": "board_pin",
+          "pin": "OUT",
+          "expect": 0,
+          "why": "VX_OUTPUT_LOW drives its level at registration"
+        },
+        {
+          "op": "call",
+          "fn": "pin_write",
+          "args": [
+            1,
+            1
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "OUT",
+          "expect": 1
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            1
+          ],
+          "ret": 1,
+          "why": "an output reads back what the chip drives"
+        },
+        {
+          "op": "call",
+          "fn": "pin_write",
+          "args": [
+            1,
+            0
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "OUT",
+          "expect": 0
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            1
+          ],
+          "ret": 0
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            0
+          ],
+          "ret": 0,
+          "why": "an input nobody drives reads low"
+        },
+        {
+          "op": "drive",
+          "pin": "IN",
+          "level": 1
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            0
+          ],
+          "ret": 1
+        },
+        {
+          "op": "drive",
+          "pin": "IN",
+          "level": 0
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            0
+          ],
+          "ret": 0
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin IN=1",
+            "pin IN=0"
+          ],
+          "why": "a watch on both edges sees each edge once"
+        },
+        {
+          "op": "call",
+          "fn": "pin_read",
+          "args": [
+            3
+          ],
+          "ret": 0,
+          "why": "CS never driven reads low in both hosts: a chip's pull is not modelled on a board pin (the parts on it inject levels with no strength); the bus, separately, treats the never-driven select as floating and deselected"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Linux-board host forwards I2C transactions and SPI chip enables to a chip and nothing else: no pad, no UART, no timer scheduler reaches it"
+    },
+    {
+      "name": "pins: set_mode drives the level an output mode carries, and INPUT releases the line where the host has a pad",
+      "steps": [
+        {
+          "op": "pad",
+          "pin": "DIR",
+          "pull": "up",
+          "why": "the sketch's pinMode(INPUT_PULLUP) on the pad the chip's DIR pin is wired to"
+        },
+        {
+          "op": "call",
+          "fn": "pin_set_mode",
+          "args": [
+            2,
+            16
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "DIR",
+          "expect": 0,
+          "why": "VX_OUTPUT_LOW through set_mode drives low at once, as it does at registration: the chip's low wins over the pull"
+        },
+        {
+          "op": "call",
+          "fn": "pin_set_mode",
+          "args": [
+            2,
+            17
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "DIR",
+          "expect": 1
+        },
+        {
+          "op": "call",
+          "fn": "pin_write",
+          "args": [
+            2,
+            0
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "DIR",
+          "expect": 0
+        },
+        {
+          "op": "call",
+          "fn": "pin_set_mode",
+          "args": [
+            2,
+            0
+          ]
+        },
+        {
+          "op": "board_pin",
+          "pin": "DIR",
+          "expect": 1,
+          "why": "vx_pin_set_mode(VX_INPUT) is the tri-state idiom: the chip lets go and the pad's pull-up restores HIGH",
+          "hosts": {
+            "worker": {
+              "expect": 0,
+              "why": "the worker has no pad model: QEMU's pin injection carries a level and no float state, so the pad keeps the last level the chip drove"
+            }
+          }
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Linux-board host forwards I2C transactions and SPI chip enables to a chip and nothing else: no pad, no UART, no timer scheduler reaches it"
+    },
+    {
+      "name": "time: vx_sim_now_nanos and the timers run on the guest clock in every host",
+      "steps": [
+        {
+          "op": "clock",
+          "ns": 0
+        },
+        {
+          "op": "call",
+          "fn": "now_lo",
+          "args": [],
+          "ret": 0
+        },
+        {
+          "op": "clock",
+          "ns": 1500000
+        },
+        {
+          "op": "call",
+          "fn": "now_lo",
+          "args": [],
+          "ret": 1500000,
+          "why": "the chip reads the guest's time, not the page's or the host's"
+        },
+        {
+          "op": "call",
+          "fn": "timer_start",
+          "args": [
+            1000,
+            1
+          ]
+        },
+        {
+          "op": "clock",
+          "ns": 2000000
+        },
+        {
+          "op": "trace",
+          "expect": [],
+          "why": "armed at 1.5 ms for 1 ms: nothing due at 2 ms"
+        },
+        {
+          "op": "clock",
+          "ns": 2500000
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "timer now=2500000"
+          ],
+          "why": "due exactly one period after vx_timer_start"
+        },
+        {
+          "op": "clock",
+          "ns": 5000000
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "timer now=3500000",
+            "timer now=4500000"
+          ],
+          "why": "a periodic timer fires once per period it missed, and each fire reads its own deadline as now"
+        },
+        {
+          "op": "call",
+          "fn": "timer_stop",
+          "args": []
+        },
+        {
+          "op": "clock",
+          "ns": 9000000
+        },
+        {
+          "op": "trace",
+          "expect": [],
+          "why": "stopped: nothing fires"
+        },
+        {
+          "op": "call",
+          "fn": "timer_start",
+          "args": [
+            500,
+            0
+          ]
+        },
+        {
+          "op": "clock",
+          "ns": 9500000
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "timer now=9500000"
+          ]
+        },
+        {
+          "op": "clock",
+          "ns": 12000000
+        },
+        {
+          "op": "trace",
+          "expect": [],
+          "why": "a one-shot fires once"
+        }
+      ],
+      "only": [
+        "browser",
+        "worker"
+      ],
+      "why_only": "the Linux-board host forwards I2C transactions and SPI chip enables to a chip and nothing else: no pad, no UART, no timer scheduler reaches it"
+    },
+    {
+      "name": "attributes: the number and the string, defaults and live values",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "attr_gain_x100",
+          "args": [],
+          "ret": 300,
+          "why": "the chip.json default"
+        },
+        {
+          "op": "attr",
+          "name": "gain",
+          "value": 2.5
+        },
+        {
+          "op": "call",
+          "fn": "attr_gain_x100",
+          "args": [],
+          "ret": 250,
+          "why": "a live value is read on the next call"
+        },
+        {
+          "op": "call",
+          "fn": "attr_label_len",
+          "args": [],
+          "ret": 3
+        },
+        {
+          "op": "call",
+          "fn": "attr_label_read",
+          "args": [
+            8
+          ],
+          "ret": 3,
+          "scratchHex": "61626300eeeeeeee",
+          "why": "the NUL fits"
+        },
+        {
+          "op": "call",
+          "fn": "attr_label_read",
+          "args": [
+            2
+          ],
+          "ret": 1,
+          "scratchHex": "6100eeeeeeeeeeee",
+          "why": "cap counts the NUL"
+        },
+        {
+          "op": "call",
+          "fn": "attr_label_read",
+          "args": [
+            0
+          ],
+          "ret": 0,
+          "scratchHex": "eeeeeeeeeeeeeeee",
+          "why": "no room: nothing written"
+        }
+      ]
+    },
+    {
+      "name": "blob: the named storage answers as blob-probe's table says",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "blob_size",
+          "args": [],
+          "ret": 16
+        },
+        {
+          "op": "call",
+          "fn": "blob_read",
+          "args": [
+            14,
+            8
+          ],
+          "ret": 2,
+          "scratchHex": "0e0feeeeeeeeeeee"
+        },
+        {
+          "op": "poke",
+          "hex": "aabb"
+        },
+        {
+          "op": "call",
+          "fn": "blob_write",
+          "args": [
+            2,
+            2
+          ],
+          "ret": 2
+        },
+        {
+          "op": "call",
+          "fn": "blob_read",
+          "args": [
+            0,
+            4
+          ],
+          "ret": 4,
+          "scratchHex": "0001aabbeeeeeeee"
+        }
+      ]
+    },
+    {
+      "name": "spi (pi): a chip enable transaction is select, bytes, deselect, and on_done reports once",
+      "only": [
+        "pi"
+      ],
+      "why_only": "the Pi's SPI form: the guest's SPI <bus> <ce> X <hex> line, replayed on the responder's pseudo select",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "set_auto_arm",
+          "args": [
+            1
+          ]
+        },
+        {
+          "op": "ce",
+          "mosi": [
+            1,
+            2,
+            3
+          ],
+          "miso": [
+            160,
+            161,
+            162
+          ],
+          "hold": false
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=0",
+            "spi_done h=0 n=3 buf=own",
+            "spi_rx 0=01",
+            "spi_rx 1=02",
+            "spi_rx 2=03",
+            "pin CS=1"
+          ],
+          "why": "the CE falls, the chip arms, three bytes, the CE rises: the chip's vx_spi_stop on the rise finds the frame complete and reports nothing more"
+        },
+        {
+          "op": "ce",
+          "mosi": [
+            5
+          ],
+          "miso": [
+            160
+          ],
+          "hold": true
+        },
+        {
+          "op": "ce",
+          "mosi": [
+            6
+          ],
+          "miso": [
+            161
+          ],
+          "hold": false,
+          "why": "XC keeps the select down: the second transfer continues the same frame"
+        },
+        {
+          "op": "trace",
+          "expect": [
+            "pin CS=0",
+            "pin CS=1",
+            "spi_done h=0 n=2 buf=own",
+            "spi_rx 0=05",
+            "spi_rx 1=06"
+          ],
+          "why": "CS rising ends the frame at two bytes, from the chip's own vx_spi_stop"
+        }
+      ]
+    },
+    {
+      "name": "analog: vx_pin_read_analog answers the solved voltage on a wired pad, and vx_pin_wired tells a wired pad from one in the air",
+      "steps": [
+        {
+          "op": "call",
+          "fn": "pin_wired",
+          "args": [
+            5
+          ],
+          "ret": 0,
+          "why": "no wire reaches AIN yet"
+        },
+        {
+          "op": "call",
+          "fn": "pin_read_analog_mv",
+          "args": [
+            5
+          ],
+          "ret": 0,
+          "why": "a pad in the air reads 0 V, never a PWM duty or a digital level scaled to the rail"
+        },
+        {
+          "op": "volts",
+          "pin": "AIN",
+          "volts": 2.0,
+          "why": "a rotary sensor at 120 degrees on a 5 V rail: 2.000 V on AIN's net"
+        },
+        {
+          "op": "call",
+          "fn": "pin_wired",
+          "args": [
+            5
+          ],
+          "ret": 1
+        },
+        {
+          "op": "call",
+          "fn": "pin_read_analog_mv",
+          "args": [
+            5
+          ],
+          "ret": 2000
+        },
+        {
+          "op": "volts",
+          "pin": "AIN",
+          "volts": 3.3,
+          "why": "the knob turns: the solve moves, and so does the reading"
+        },
+        {
+          "op": "call",
+          "fn": "pin_read_analog_mv",
+          "args": [
+            5
+          ],
+          "ret": 3300
+        },
+        {
+          "op": "call",
+          "fn": "pin_wired",
+          "args": [
+            6
+          ],
+          "ret": 0,
+          "why": "AIN2 has no wire whatever AIN does"
+        },
+        {
+          "op": "call",
+          "fn": "pin_read_analog_mv",
+          "args": [
+            6
+          ],
+          "ret": 0
+        },
+        {
+          "op": "volts",
+          "pin": "AIN",
+          "volts": null,
+          "why": "the wire is removed"
+        },
+        {
+          "op": "call",
+          "fn": "pin_wired",
+          "args": [
+            5
+          ],
+          "ret": 0
+        },
+        {
+          "op": "call",
+          "fn": "pin_read_analog_mv",
+          "args": [
+            5
+          ],
+          "ret": 0
+        }
+      ]
+    }
+  ]
+}

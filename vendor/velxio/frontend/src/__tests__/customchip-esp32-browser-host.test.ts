@@ -1,0 +1,59 @@
+/**
+ * A custom chip on an ESP32 board whose bridge does not host chips in a
+ * backend worker takes the browser path: GPIO through the shim, and its
+ * buses (UART included) through the fabric by its own pads.
+ *
+ * The OSS QEMU bridge hosts chips in its worker and has no opinion; an
+ * overlay's in-browser engine answers `hostsCustomChips()` false. Before
+ * this seam existed the shim's `sendPinEvent` alone decided, and a chip on
+ * an in-browser engine was shipped as a sensor record nothing ever ran.
+ *
+ * SPI is no longer one of the surfaces: a chip joins a board's SPI bus from
+ * its own vx_spi_attach and the fabric routes it by its wiring, so nothing is
+ * installed on the shim for it. What used to be tested here (the chain node
+ * this module hung on `simulator.spi`) is gone with it; the byte path of a
+ * chip on a real engine is covered by
+ * board-buses/board-buses-repro-chips-spi.test.ts.
+ */
+import { describe, it, expect } from 'vitest';
+import { detectSimulatorKind, hostsChipsInWorker } from '../simulation/customChips/simulatorBridges';
+
+function esp32Shim(extra: Record<string, unknown> = {}) {
+  return {
+    sim: {
+      sendPinEvent: () => {},
+      registerSensor: () => true,
+      ...extra,
+    },
+  };
+}
+
+describe('custom chips on an ESP32 shim', () => {
+  it('is an esp32 simulator whichever bridge is behind the shim', () => {
+    expect(detectSimulatorKind(esp32Shim().sim)).toBe('esp32');
+    expect(detectSimulatorKind(esp32Shim({ hostsCustomChips: () => false }).sim)).toBe('esp32');
+  });
+
+  it('hosts chips in the worker when the bridge has no opinion', () => {
+    expect(hostsChipsInWorker(esp32Shim().sim)).toBe(true);
+    expect(hostsChipsInWorker(esp32Shim({ hostsCustomChips: () => true }).sim)).toBe(true);
+  });
+
+  it('leaves chips to the browser when the bridge says it has no worker', () => {
+    expect(hostsChipsInWorker(esp32Shim({ hostsCustomChips: () => false }).sim)).toBe(false);
+  });
+
+  it('treats a throwing answer as the worker path, never as a crash', () => {
+    const { sim } = esp32Shim({
+      hostsCustomChips: () => {
+        throw new Error('bridge gone');
+      },
+    });
+    expect(hostsChipsInWorker(sim)).toBe(true);
+  });
+
+  it('never claims a worker for a simulator that is not there', () => {
+    expect(hostsChipsInWorker(null)).toBe(false);
+    expect(hostsChipsInWorker(undefined)).toBe(false);
+  });
+});

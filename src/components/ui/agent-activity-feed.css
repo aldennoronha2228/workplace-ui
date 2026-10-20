@@ -1,0 +1,29 @@
+.agent-thinking { max-height: 180px; overflow-y: auto; padding: 10px 12px; border-left: 2px solid #4a8fd9; color: #888; font: 12px/1.7 monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-feed { display: grid; gap: 12px; min-width: 0; }
+.agent-run { border: 1px solid #303030; border-radius: 10px; background: #151515; overflow: hidden; }
+.agent-run-header { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #262626; color: #b5b5b5; font-size: 12px; }
+.agent-run-header span { min-width: 0; overflow-wrap: anywhere; }
+.agent-run-header small { margin-left: auto; flex-shrink: 0; color: #777; font-variant-numeric: tabular-nums; }
+.agent-run-header svg { flex-shrink: 0; }
+.agent-run-body { display: grid; gap: 2px; padding: 4px 8px 8px; }
+.agent-run-check { color: #4ade80; }
+.agent-run-fail { color: #f87171; }
+.agent-run-muted { color: #777; }
+.agent-narration { padding: 4px 8px 4px 30px; color: #8f8f8f; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.agent-narration p { margin: 0; }
+.agent-step { border-radius: 6px; }
+.agent-step > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; color: #b5b5b5; font-size: 12px; text-align: left; border-radius: 6px; }
+.agent-step > button:hover { background: #1f1f1f; }
+.agent-step button span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.agent-step button small { flex-shrink: 0; color: #777; }
+.agent-step svg { flex-shrink: 0; color: #777; }
+.agent-step .agent-step-check { color: #4ade80; }
+.agent-step .agent-step-fail { color: #f87171; }
+.agent-step .agent-chevron { color: #555; }
+.agent-step-body { padding: 0 8px 10px 30px; }
+.agent-command, .agent-output { margin: 0; padding: 10px; font: 12px/1.6 monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow-y: auto; }
+.agent-command { border: 1px solid #303030; border-radius: 5px; background: #0d0d0d; color: #ccc; }
+.agent-output { color: #999; }
+.agent-chevron-open { transform: rotate(90deg); }
+.agent-spin { animation: agent-spin 1s linear infinite; }
+@keyframes agent-spin { to { transform: rotate(360deg); } }

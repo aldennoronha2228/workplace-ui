@@ -1,0 +1,9 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" fill="#1a2332" rx="4"/>
+      <rect x="10" y="14" width="44" height="30" fill="#2a3548" rx="3" stroke="#4a5878"/>
+      <text x="32" y="30" text-anchor="middle" font-size="9" font-family="monospace" fill="#4ade80" font-weight="bold">5.00V</text>
+      <text x="32" y="40" text-anchor="middle" font-size="7" font-family="monospace" fill="#fbbf24">1.00A</text>
+      <circle cx="18" cy="52" r="3" fill="#dc2626"/>
+      <circle cx="46" cy="52" r="3" fill="#0f172a" stroke="#64748b"/>
+      <text x="32" y="60" text-anchor="middle" font-size="6" fill="#9d9d9d">PSU</text>
+    </svg>

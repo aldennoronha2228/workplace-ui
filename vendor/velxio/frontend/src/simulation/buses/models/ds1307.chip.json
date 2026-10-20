@@ -1,0 +1,9 @@
+{
+  "schema": "velxio-chip/v1",
+  "name": "DS1307 real-time clock",
+  "author": "Velxio",
+  "license": "MIT",
+  "description": "DS1307 at 0x68: the host's time until the sketch sets one (decision D7), CH stops the clock, CONTROL and 56 bytes of RAM, the pointer wrapping at 0x3F. The host pushes its wall clock into rtc_inputs (export chip_inputs, rtc.h); build_times is the firmware's __DATE__/__TIME__ pairs, answered live by the host.",
+  "pins": ["SCL", "SDA"],
+  "attributes": []
+}

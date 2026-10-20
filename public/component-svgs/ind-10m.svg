@@ -1,0 +1,5 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" fill="#1a2332" rx="4"/>
+    <rect x="6" y="29" width="52" height="3" fill="#aaa"/>
+    <path d="M 12 30 Q 16 18 20 30 Q 24 18 28 30 Q 32 18 36 30 Q 40 18 44 30 Q 48 18 52 30"
+          fill="none" stroke="#B23820" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="32" y="56" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#e5e7eb" font-weight="bold">10 mH</text></svg>

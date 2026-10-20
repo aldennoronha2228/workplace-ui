@@ -1,0 +1,9 @@
+{
+  "schema": "velxio-chip/v1",
+  "name": "MPU-6050 six-axis IMU",
+  "author": "Velxio",
+  "license": "MIT",
+  "description": "MPU-6050 (or the MPU-9250 die) at 0x68 or 0x69: asleep at power-on, the resets, range-aware encoding latched at the read, offsets and factory trims, standby and CYCLE, sampling on the guest clock with DATA_RDY, the INT pad, the FIFO, the DMP memory port and the MotionApps 2.0, 4.1 and 6.12 packets. The host pushes the guest clock, the panel's seven values, the address and the die into mpu_io (export chip_inputs); the model calls no host function.",
+  "pins": ["SCL", "SDA"],
+  "attributes": []
+}

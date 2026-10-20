@@ -1,0 +1,31 @@
+{
+  "microsd": {
+    "sourceSha256": "0e8fc439ae32b6fdebb257b108038067530845064eedf7a687dfab348beabbe3"
+  },
+  "ds1307": {
+    "sourceSha256": "231d8a0cae9d1e61ae97672bce170bb71f6ab9fe4cb0f848b03babf5e2bdccef",
+    "includeSha256": {
+      "i2c_host.h": "df7195ceace23604ee67982f283272c4fc4d9239f5aaf8c4919f848d3501ce0b",
+      "rtc.h": "dc825e9c968f249cf68b297330ecc1fc1731ef5d0dcc970229c93751ac3fba70"
+    }
+  },
+  "ds3231": {
+    "sourceSha256": "5f372799e2d7913f2a07b13438b425ca9cb6a872088a67e65b10b1cdf83d4ee2",
+    "includeSha256": {
+      "i2c_host.h": "df7195ceace23604ee67982f283272c4fc4d9239f5aaf8c4919f848d3501ce0b",
+      "rtc.h": "dc825e9c968f249cf68b297330ecc1fc1731ef5d0dcc970229c93751ac3fba70"
+    }
+  },
+  "bmp280": {
+    "sourceSha256": "be77b226d003b010f62a6419f4f85dcfcc10b7654593f433b22d85406b4ce8c3",
+    "includeSha256": {
+      "i2c_host.h": "df7195ceace23604ee67982f283272c4fc4d9239f5aaf8c4919f848d3501ce0b"
+    }
+  },
+  "mpu6050": {
+    "sourceSha256": "0b08dd5da3f32a35c6de8facf3c8e5c896343c1244f15fec3bb83e07b76a1e04",
+    "includeSha256": {
+      "i2c_host.h": "df7195ceace23604ee67982f283272c4fc4d9239f5aaf8c4919f848d3501ce0b"
+    }
+  }
+}

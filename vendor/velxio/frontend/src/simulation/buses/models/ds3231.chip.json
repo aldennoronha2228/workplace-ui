@@ -1,0 +1,9 @@
+{
+  "schema": "velxio-chip/v1",
+  "name": "DS3231 real-time clock",
+  "author": "Velxio",
+  "license": "MIT",
+  "description": "DS3231 at 0x68: the host's time until the sketch sets one (decision D7), two alarms, CONTROL and STATUS, the aging offset and the temperature in quarter degrees. The host pushes its wall clock and the panel's temperature into rtc_inputs (export chip_inputs, rtc.h); build_times is the firmware's __DATE__/__TIME__ pairs, answered live by the host.",
+  "pins": ["SCL", "SDA"],
+  "attributes": []
+}

@@ -1,0 +1,706 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg-canvas);
+  color: var(--color-fg-default);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── App shell ──────────────────────────────────── */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ── Header ─────────────────────────────────────── */
+.app-header {
+  background-color: var(--color-bg-header);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--color-border-default);
+  padding: 0 16px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--wb-13);
+  letter-spacing: -0.2px;
+}
+
+/* Kept for backward compatibility */
+.examples-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--wb-11);
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--wb-6);
+  transition: all 0.15s;
+}
+
+.examples-link:hover {
+  background: var(--wb-4);
+  color: var(--wb-13);
+  border-color: var(--wb-8);
+}
+
+/* ── Unified nav links ──────────────────────────── */
+.header-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.header-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  color: var(--color-fg-muted);
+  text-decoration: none;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 400;
+  transition:
+    color 0.2s,
+    background 0.2s;
+  white-space: nowrap;
+}
+
+.header-nav-link:hover {
+  color: var(--wb-13);
+  background: var(--color-wash-hover);
+}
+
+.header-nav-link-active {
+  color: var(--wb-13);
+  background: var(--color-wash-active);
+}
+
+.header-nav-discord {
+  color: #7289da;
+}
+
+.header-nav-discord:hover {
+  color: var(--color-accent-fg);
+  background: rgba(114, 137, 218, 0.1);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Mobile hamburger */
+.header-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.header-hamburger span {
+  display: block;
+  height: 2px;
+  background: var(--wb-11);
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.header-hamburger:hover span {
+  background: var(--wb-13);
+}
+
+/* ── Unified top toolbar (desktop) ───────────────
+   Editor controls + canvas controls share a single full-width row that does
+   NOT reflow when the editor/canvas splitter below is dragged. The canvas
+   side renders into the empty `.unified-toolbar-canvas` slot via a React
+   portal from inside SimulatorCanvas. */
+.unified-toolbar {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  /* When the row genuinely cannot fit (narrow window + docked chat), wrap
+     the canvas controls onto a second line instead of letting flexbox
+     squeeze fixed blocks below their content — that used to crush the
+     Code/Both/Circuit toggle to a third of its width, clipping two of its
+     buttons into unreachable slivers. Two short rows beat hidden buttons. */
+  flex-wrap: wrap;
+  background: var(--wb-3);
+  border-bottom: 1px solid var(--wb-6);
+  min-height: 38px;
+  /* Query container so every zone (view-mode toggle, editor toolbar, canvas
+     controls) can collapse based on the *shared bar's own width* — which is
+     what shrinks when the right-docked AI chat opens — instead of the viewport
+     width. Prevents the canvas controls (board selector, Serial, Scope) from
+     overlapping the editor Run/Compile buttons on a narrow bar. `layout`
+     containment (implied) does not clip: the overflow/run dropdowns still
+     render below the bar. */
+  container-type: inline-size;
+  container-name: unified-toolbar;
+}
+
+/* Collapse the Code/Both/Circuit labels to icon-only first (biggest fixed
+   block in the bar) as the shared bar narrows. */
+.view-mode-toggle {
+  display: flex;
+}
+
+@container unified-toolbar (max-width: 1140px) {
+  .view-mode-toggle .vm-label {
+    display: none;
+  }
+}
+
+/* Narrow bar (small window with the AI chat docked): drop the explorer /
+   Code / Both / Circuit toggle altogether. Every one of its switches is a
+   checkmarked row in the header's View menu, so nothing is lost — and the
+   ~140px it frees is what keeps the Run group and the canvas controls on
+   one line instead of overlapping. */
+@container unified-toolbar (max-width: 760px) {
+  .view-mode-toggle {
+    display: none;
+  }
+}
+
+.unified-toolbar-editor {
+  flex: 1 1 auto;
+  /* Floor the editor zone at its own content width so it can never shrink
+     *under* its buttons and paint them over the adjacent canvas controls
+     (a hardcoded 280px floor sat below the real content width, letting the
+     console button overlap the board selector with the chat docked). When
+     the row genuinely cannot fit, the bar's flex-wrap moves the canvas
+     controls to a second line instead — never an overlap. */
+  min-width: max-content;
+  display: flex;
+}
+
+.unified-toolbar-editor .editor-toolbar-wrapper,
+.unified-toolbar-editor .editor-toolbar {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The wrapper is an inline-size query container for its standalone (mobile)
+   mount. Inside the shared bar that containment is exactly what let the
+   editor zone shrink under its buttons: size containment makes the wrapper
+   contribute ZERO intrinsic width, so the zone's `min-width: max-content`
+   above resolved to nothing, flexbox squeezed it, and Libraries / Output
+   painted over the board selector instead of the bar wrapping. Turn it off
+   here — the label collapses are keyed to the `unified-toolbar` container
+   in EditorToolbar.css for this mount. */
+.unified-toolbar-editor .editor-toolbar-wrapper {
+  container-type: normal;
+}
+
+.unified-toolbar-editor .editor-toolbar {
+  border-bottom: none;
+}
+
+.unified-toolbar-canvas {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid var(--wb-6);
+}
+
+/* ── Main panels container ──────────────────────── */
+.app-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.editor-panel {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  overflow: hidden;
+  min-width: 20%;
+  max-width: 80%;
+}
+
+/* Toggle button for the file explorer sidebar */
+.explorer-toggle-btn {
+  width: 36px;
+  flex-shrink: 0;
+  background: var(--wb-3);
+  border: none;
+  border-right: 1px solid var(--wb-6);
+  border-bottom: 1px solid var(--wb-6);
+  color: var(--wb-9);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.explorer-toggle-btn:hover {
+  background: var(--wb-4);
+  color: var(--wb-12);
+}
+
+/* Resize handle for the file explorer sidebar */
+.explorer-resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--wb-4);
+  transition: background 0.15s;
+  position: relative;
+  z-index: 5;
+}
+
+.explorer-resize-handle:hover,
+.explorer-resize-handle:active {
+  background: var(--color-action-primary);
+}
+
+.editor-wrapper {
+  flex: 1;
+  overflow: hidden;
+}
+
+.simulator-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 20%;
+}
+
+/* ── Resize handle ──────────────────────────────── */
+.resize-handle {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--wb-4);
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--color-action-primary);
+}
+
+.resize-handle-grip {
+  width: 2px;
+  height: 32px;
+  background: var(--wb-7);
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.resize-handle:hover .resize-handle-grip,
+.resize-handle:active .resize-handle-grip {
+  background: var(--wb-9);
+}
+
+/* ── Responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .editor-panel,
+  .simulator-panel {
+    width: 100% !important;
+    min-width: unset;
+    max-width: unset;
+    flex: 1;
+  }
+
+  .resize-handle {
+    display: none;
+  }
+}
+
+/* ── Mobile tab bar ──────────────────────────────── */
+.mobile-tab-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-tab-bar {
+    display: flex;
+    flex-shrink: 0;
+    height: 44px;
+    background: var(--wb-2);
+    border-bottom: 2px solid var(--color-action-primary);
+    z-index: 50;
+    /* Sits between header and panels */
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--wb-9);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background 0.15s,
+      border-color 0.15s;
+    padding: 8px 0;
+    margin-bottom: -2px;
+  }
+
+  .mobile-tab-btn--active {
+    color: var(--color-action-primary);
+    border-bottom-color: var(--color-action-primary);
+    background: var(--color-accent-soft);
+  }
+
+  .mobile-tab-btn:active {
+    background: var(--color-wash-hover);
+  }
+}
+
+/* ── View-mode toggle: desktop only (mobile uses bottom-nav) ─────── */
+@media (max-width: 768px) {
+  .view-mode-toggle {
+    display: none !important;
+  }
+}
+
+/* ── Header responsive ───────────────────────────── */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 10px;
+    height: 44px;
+  }
+
+  .examples-link span,
+  .header-github-text,
+  .header-username-text {
+    display: none;
+  }
+
+  .examples-link {
+    padding: 6px 8px;
+  }
+
+  /* Mobile nav: hide links, show hamburger, dropdown on open */
+  .header-nav-links {
+    display: none;
+    position: absolute;
+    top: 44px;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-header);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--color-border-default);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 6px 0;
+    z-index: 200;
+  }
+
+  .header-nav-links.header-nav-open {
+    display: flex;
+  }
+
+  .header-nav-link {
+    padding: 10px 16px;
+    border-radius: 0;
+    font-size: 14px;
+  }
+
+  .header-hamburger {
+    display: flex;
+  }
+}
+
+@keyframes velxio-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1.0; transform: scale(1.0); }
+}
+
+/* Marching-ants attention border (CameraToggle while it wants a click):
+   four thin repeating-gradient strips, one per edge, sliding one dash
+   period per cycle. Drawn as backgrounds rather than a border because a
+   CSS border cannot animate its dash offset. Uses currentColor so the
+   ants inherit the button's state colour (grey idle, red on error).
+   NOT named .velxio-ants: that class is the canvas selection outline
+   (SimulatorCanvas.css) whose ::after is position:absolute — on a
+   non-positioned button it anchored to the toolbar and drew a
+   toolbar-wide ant line. */
+@keyframes velxio-marching-ants {
+  to { background-position: 12px 0, -12px 100%, 0 -12px, 100% 12px; }
+}
+.velxio-btn-ants {
+  background-image:
+    repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 12px),
+    repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 12px),
+    repeating-linear-gradient(0deg, currentColor 0 6px, transparent 6px 12px),
+    repeating-linear-gradient(0deg, currentColor 0 6px, transparent 6px 12px);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size: 12px 1px, 12px 1px, 1px 12px, 1px 12px;
+  background-position: 0 0, 0 100%, 0 0, 100% 0;
+  animation: velxio-marching-ants 0.7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .velxio-btn-ants { animation: none; }
+}
+
+/* ── Editor: toolbar riding inside the header ─────────────────────────────
+   With the marketing nav gone from the editor header, its middle was dead
+   space while the toolbar occupied a whole second bar. The strip now fills
+   that middle: one 44px row instead of 44+38 — a full row returned to the
+   code/canvas. The strip keeps its own class names (container queries, the
+   docked-chat padding-right) and wraps internally when it truly cannot
+   fit; the header then grows instead of clipping or overlapping. */
+.app-header--with-toolbar {
+  height: auto;
+  min-height: 44px;
+}
+
+.header-editor-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-self: stretch;
+  margin: 0 10px;
+}
+
+.header-editor-toolbar .unified-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Skin: it is part of the header now, not a bar of its own. */
+  background: transparent;
+  border-bottom: none;
+  min-height: 44px;
+  align-items: center;
+}
+
+/* Keep the brand block and the right-side controls pinned to the first
+   line when the strip wraps the header taller. */
+.app-header--with-toolbar .header-left,
+.app-header--with-toolbar .header-right {
+  align-self: flex-start;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Logo and the File menu read as one menubar — the marketing-header 16px
+   gap left a hole between them in the editor. */
+.app-header--with-toolbar .header-left {
+  gap: 6px;
+}
+/* Tauri desktop: the header is the toolbar strip and nothing else — the
+   brand and the menus live in the native title bar / menubar. */
+.app-header--desktop .header-left {
+  display: none;
+}
+.app-header--desktop .header-editor-toolbar {
+  margin-left: 0;
+}
+
+.app-header--with-toolbar .header-content {
+  align-items: stretch;
+}
+
+/* The editor zone / toolbar inside the strip: no own chrome, blend into
+   the header instead of painting a nested dark box with its own border. */
+.header-editor-toolbar .editor-toolbar,
+.header-editor-toolbar .unified-toolbar-editor .editor-toolbar {
+  background: transparent;
+  border-bottom: none;
+  height: 44px;
+}
+
+/* ── Fallback for the in-header strip: its own full-width bar ───────────
+   Between "fits in one row" and "phone" there is an awkward middle (e.g.
+   1440px with the chat docked) where flex-wrap produced an orphan group of
+   canvas controls floating inside a tall transparent header, next to a
+   dead hole before the right edge. When one row GENUINELY cannot hold the
+   strip, it drops back to being its own full-width second bar with its old
+   skin: exactly the familiar pre-merge layout, which reads as intentional
+   instead of broken.
+
+   Whether it fits is MEASURED by AppHeader (headerStripFit.ts), which sets
+   this class — not guessed from media queries. The old thresholds
+   (1040 / 1060 / 1400px by chat state) were right for one board only: a
+   XIAO with display + camera + mic + scope controls needs a wider strip
+   than an Uno, and at 1440px with the chat docked it wrapped inside the
+   header again. */
+.app-header--with-toolbar.app-header--strip-below .header-content {
+  flex-wrap: wrap;
+}
+.app-header--with-toolbar.app-header--strip-below .header-editor-toolbar {
+  flex-basis: 100%;
+  order: 10;
+  margin: 0 -16px;
+}
+.app-header--with-toolbar.app-header--strip-below .header-editor-toolbar .unified-toolbar {
+  background: var(--wb-3);
+  border-top: 1px solid var(--wb-6);
+  min-height: 38px;
+}
+
+/* ── Editor corner box (bottom-left) ─────────────────────────────────────
+   Language switcher + account button, IDE style. Moving them out of the
+   header is what buys the toolbar the last ~150px it needed to keep the
+   single-row layout on 1440px screens with the chat docked. */
+.editor-corner-box {
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 7000; /* above the canvas, below the chat (8000) and modals */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--wb-1);
+  border: 1px solid var(--wb-5);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2);
+}
+
+/* With the chat rising to the very top (agent CSS sets the header's
+   padding-right), the strip must NOT also pad itself — that would double
+   the reservation and squeeze the toolbar by another panel-width. */
+.app-header--with-toolbar .header-editor-toolbar .unified-toolbar {
+  padding-right: 6px !important;
+}
+
+/* ── Explorer account footer ─────────────────────────────────────────────
+   The account + language block fused to the bottom of the file explorer:
+   a long tree scrolls above it instead of hiding under a floating box.
+   (.editor-corner-box remains as the fallback when the explorer is
+   collapsed.) The standalone globe is a logged-out affordance only — once
+   the pro auth slot renders its signed-in marker, language moves inside
+   the account menu and the globe hides. */
+.explorer-account-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--wb-5);
+  background: var(--wb-1);
+}
+
+.explorer-account-footer {
+  container-type: inline-size;
+}
+
+/* Tight footer (narrow explorer): the avatar alone identifies the account;
+   the name is a luxury that costs exactly the width we do not have. The
+   threshold sits under the explorer's 150px default so the first name shows
+   out of the box and only goes when the user drags the pane narrower. */
+@container (max-width: 135px) {
+  .explorer-account-footer .header-username-text {
+    display: none;
+  }
+}
+
+/* Collapsed explorer: the floating fallback box shows the circle only. */
+.editor-corner-box .header-username-text {
+  display: none;
+}
+
+/* Flash dialog: indeterminate bar while the sketch compiles before a flash. */
+@keyframes flash-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.flash-indeterminate {
+  animation: flash-indeterminate 1.4s ease-in-out infinite;
+}
+
+/* ── Pinned-dark subtrees (pro DarkSurface) ──────────────
+   The marketing pages render inside a [data-theme=dark] island, so the
+   appearance switch in the header would set a preference the reader cannot
+   see take effect until they navigate away. Hide it there; the editor's own
+   toolbar and the View menu remain the way in. */
+.velxio-dark-surface .header-theme-toggle {
+  display: none;
+}
+
+.header-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition:
+    background var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+.header-theme-toggle:hover {
+  background: var(--color-wash-hover);
+  color: var(--color-fg-default);
+}

@@ -1,0 +1,8 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" fill="#1a2332" rx="4"/>
+    <rect x="6" y="29" width="52" height="3" fill="#aaa"/>
+    <rect x="14" y="22" width="36" height="17" rx="3" fill="#d5b597" stroke="#a37b4f" stroke-width="0.6"/>
+    <rect x="20" y="22" width="3" height="17" fill="#8F4814"/>
+    <rect x="26" y="22" width="3" height="17" fill="#000"/>
+    <rect x="32" y="22" width="3" height="17" fill="#FC9700"/>
+    <rect x="42" y="22" width="3" height="17" fill="#F1D863"/>
+    <text x="32" y="56" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#e5e7eb" font-weight="bold">10 kΩ</text></svg>

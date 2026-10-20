@@ -1,0 +1,9 @@
+{
+  "schema": "velxio-chip/v1",
+  "name": "BMP280 pressure and temperature sensor",
+  "author": "Velxio",
+  "license": "MIT",
+  "description": "BMP280 at 0x76 or 0x77: sleep, forced and normal mode, status measuring, the soft reset, the datasheet's example calibration and raw values the compensation turns back into the panel's. The host pushes the panel's temperature and pressure and the address into bmp280_io (export chip_inputs, bmp280.c).",
+  "pins": ["SCL", "SDA"],
+  "attributes": []
+}

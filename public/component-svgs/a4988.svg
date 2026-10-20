@@ -1,0 +1,6 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" fill="#1a2332" rx="4"/>
+    <rect x="16" y="7" width="32" height="50" rx="3" fill="#0b3d2e" stroke="#2d8f5a" stroke-width="0.8"/>
+    <rect x="25" y="25" width="14" height="14" rx="1" fill="#15151a" stroke="#333"/>
+    <text x="32" y="19" text-anchor="middle" font-family="sans-serif" font-size="6" fill="#cfe8d8" font-weight="bold">A4988</text>
+    <g fill="#d4af37"><rect x="11" y="14" width="5" height="2"/><rect x="11" y="22" width="5" height="2"/><rect x="11" y="30" width="5" height="2"/><rect x="11" y="38" width="5" height="2"/><rect x="48" y="14" width="5" height="2"/><rect x="48" y="22" width="5" height="2"/><rect x="48" y="30" width="5" height="2"/><rect x="48" y="38" width="5" height="2"/></g>
+    <text x="32" y="51" text-anchor="middle" font-family="sans-serif" font-size="5" fill="#8fbfa6">STEP/DIR</text></svg>

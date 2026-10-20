@@ -1,6 +1,10 @@
 # Workplace UI
 
-Vite + React + TypeScript project for editing the workplace interface.
+A frontend-only Workplace editor shell extracted for UI redesign work.
+
+This project intentionally contains no backend, API client, authentication,
+AI/chat integration, firmware compiler, ESP32 runtime, or circuit simulator.
+The component cards and editor canvas are visual placeholders only.
 
 ## Run locally
 
@@ -13,10 +17,10 @@ Open the URL shown in the terminal (usually http://127.0.0.1:5173).
 
 ## For editors
 
-This is a UI-focused playground. Backend and data dependencies are stubbed so you can focus on layout, styling, and interactions.
+The complete editable page is in:
 
-Main files to edit:
-- `src/components/hardware-workspace.tsx` — primary workspace layout
-- Associated CSS files in `src/components/`
+- `src/components/hardware-workspace.tsx` — page structure and component groups
+- `src/index.css` — all page styling
 
-Make your changes, test them locally, then share the updated code.
+The component library is static by design so the UI can be redesigned without
+bringing along the original application's backend or hardware implementation.
